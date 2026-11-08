@@ -1,11 +1,10 @@
 
-name: Build Garage Auction Park and Scrapyard
+name: Build Garage Auction
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,35 +20,43 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle 8.8
+      - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.8'
 
-      - name: Extract project ZIP
+      - name: Find and extract source ZIP
         run: |
-          mkdir -p project
-          unzip -o GarageAuction-Park-Scrapyard-v2.zip -d project
+          ZIP=$(find . -maxdepth 1 -type f -iname '*.zip' | head -n 1)
 
-      - name: Find Gradle project
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: No source ZIP found in repository root"
+            exit 1
+          fi
+
+          echo "Found archive: $ZIP"
+          mkdir -p project
+          unzip -o "$ZIP" -d project
+
+      - name: Locate Gradle project
         id: locate
         run: |
           BUILD_FILE=$(find project -name build.gradle -print -quit)
 
           if [ -z "$BUILD_FILE" ]; then
-            echo "ERROR: build.gradle not found!"
+            echo "ERROR: build.gradle not found in extracted ZIP"
+            find project -maxdepth 4 -type f
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$BUILD_FILE")
-          echo "dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
-          echo "Project found: $PROJECT_DIR"
+          DIR=$(dirname "$BUILD_FILE")
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Build Forge mod
+      - name: Build mod
         working-directory: ${{ steps.locate.outputs.dir }}
         run: gradle build --no-daemon
 
-      - name: Upload compiled JAR
+      - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: GarageAuction-Park-Scrapyard-v2
