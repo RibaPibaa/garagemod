@@ -25,29 +25,14 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Find and prepare source
+      - name: Find project folder
         run: |
-          PROJECT_FILE=""
-
-          if [ -f "build.gradle" ]; then
-            PROJECT_FILE="build.gradle"
-          else
-            ZIP_FILE=$(find . -maxdepth 2 -type f -iname "*.zip" | head -n 1)
-
-            if [ -n "$ZIP_FILE" ]; then
-              echo "Found archive: $ZIP_FILE"
-              mkdir -p extracted
-              unzip -o "$ZIP_FILE" -d extracted
-            fi
-
-            PROJECT_FILE=$(find . -maxdepth 6 -type f -name "build.gradle" \
-              -not -path "./.gradle/*" | head -n 1)
-          fi
+          PROJECT_FILE=$(find . -type f -name "build.gradle" \
+            -not -path "*/build/*" | head -n 1)
 
           if [ -z "$PROJECT_FILE" ]; then
             echo "ERROR: build.gradle not found!"
-            echo "Repository files:"
-            find . -maxdepth 4 -type f | head -n 100
+            find . -maxdepth 4 -type f
             exit 1
           fi
 
@@ -56,13 +41,24 @@ jobs:
           echo "Found project: $PROJECT_DIR"
 
       - name: Build mod
+        run: gradle -p "$PROJECT_DIR" build --no-daemon
+
+      - name: Prepare JAR
         run: |
-          cd "$PROJECT_DIR"
-          gradle build --no-daemon
+          mkdir -p release
+          JAR_FILE=$(find "$PROJECT_DIR/build/libs" -maxdepth 1 \
+            -type f -name "*.jar" | head -n 1)
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "ERROR: JAR not found!"
+            exit 1
+          fi
+
+          cp "$JAR_FILE" release/
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
         with:
           name: GarageAuction-Forge-1.20.1
-          path: "**/build/libs/garageauction-0.3.0.jar"
+          path: release/*.jar
           if-no-files-found: error
