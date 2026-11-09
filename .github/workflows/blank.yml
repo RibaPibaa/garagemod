@@ -25,14 +25,18 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Find project folder
+      - name: Extract source archive
         run: |
-          PROJECT_FILE=$(find . -type f -name "build.gradle" \
-            -not -path "*/build/*" | head -n 1)
+          mkdir -p extracted
+          unzip -o GarageAuction-v2.2-source-2.zip -d extracted
+
+      - name: Find project
+        run: |
+          PROJECT_FILE=$(find extracted -type f -name "build.gradle" | head -n 1)
 
           if [ -z "$PROJECT_FILE" ]; then
-            echo "ERROR: build.gradle not found!"
-            find . -maxdepth 4 -type f
+            echo "ERROR: build.gradle not found inside archive!"
+            find extracted -maxdepth 5 -type f
             exit 1
           fi
 
@@ -46,15 +50,14 @@ jobs:
       - name: Prepare JAR
         run: |
           mkdir -p release
-          JAR_FILE=$(find "$PROJECT_DIR/build/libs" -maxdepth 1 \
-            -type f -name "*.jar" | head -n 1)
+          find "$PROJECT_DIR/build/libs" -maxdepth 1 \
+            -type f -name "*.jar" ! -name "*-sources.jar" \
+            -exec cp {} release/ \;
 
-          if [ -z "$JAR_FILE" ]; then
-            echo "ERROR: JAR not found!"
+          if [ -z "$(ls -A release)" ]; then
+            echo "ERROR: No compiled JAR found!"
             exit 1
           fi
-
-          cp "$JAR_FILE" release/
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
