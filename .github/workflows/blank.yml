@@ -1,4 +1,5 @@
-name: Build Garage Auction 0.3.0
+
+name: Build Garage Auction
 
 on:
   push:
@@ -24,18 +25,44 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Extract source project
+      - name: Find and prepare source
         run: |
-          mkdir -p extracted
-          unzip -o GarageAuction-v2.2-source.zip -d extracted
+          PROJECT_FILE=""
+
+          if [ -f "build.gradle" ]; then
+            PROJECT_FILE="build.gradle"
+          else
+            ZIP_FILE=$(find . -maxdepth 2 -type f -iname "*.zip" | head -n 1)
+
+            if [ -n "$ZIP_FILE" ]; then
+              echo "Found archive: $ZIP_FILE"
+              mkdir -p extracted
+              unzip -o "$ZIP_FILE" -d extracted
+            fi
+
+            PROJECT_FILE=$(find . -maxdepth 6 -type f -name "build.gradle" \
+              -not -path "./.gradle/*" | head -n 1)
+          fi
+
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "ERROR: build.gradle not found!"
+            echo "Repository files:"
+            find . -maxdepth 4 -type f | head -n 100
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$PROJECT_FILE")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found project: $PROJECT_DIR"
 
       - name: Build mod
-        working-directory: extracted/GarageAuctionPack
-        run: gradle build --no-daemon
+        run: |
+          cd "$PROJECT_DIR"
+          gradle build --no-daemon
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
         with:
-          name: GarageAuction-0.3.0-Forge-1.20.1
-          path: extracted/GarageAuctionPack/build/libs/garageauction-0.3.0.jar
+          name: GarageAuction-Forge-1.20.1
+          path: "**/build/libs/garageauction-0.3.0.jar"
           if-no-files-found: error
