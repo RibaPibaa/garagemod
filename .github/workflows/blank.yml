@@ -1,0 +1,39 @@
+Run gradle -p extracted/GarageAuctionPack build --no-daemon
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Task :compileJava FAILED
+/home/runner/work/garagemod/garagemod/extracted/GarageAuctionPack/src/main/java/com/geko/garageauction/structure/MarketplaceBuilder.java:1021: error: incompatible types: ChunkAccess cannot be converted to LevelChunk
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1794315292046.json
+            LevelChunk chunk=level.getChunkSource().getChunk(cx,cz,ChunkStatus.FULL,true);
+                                                            ^
+/home/runner/work/garagemod/garagemod/extracted/GarageAuctionPack/src/main/java/com/geko/garageauction/loot/LootScanner.java:137: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        Item gunItem = BuiltInRegistries.ITEM.get(new ResourceLocation("tacz", "modern_kinetic_gun"));
+                                                  ^
+/home/runner/work/garagemod/garagemod/extracted/GarageAuctionPack/src/main/java/com/geko/garageauction/loot/LootScanner.java:138: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        Item ammoItem = BuiltInRegistries.ITEM.get(new ResourceLocation("tacz", "ammo"));
+                                                   ^
+Note: /home/runner/work/garagemod/garagemod/extracted/GarageAuctionPack/src/main/java/com/geko/garageauction/loot/LootScanner.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+1 error
+2 warnings
+
+FAILURE: Build failed with an exception.
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+* What went wrong:
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 15s
+
+For more on this, please refer to https://docs.gradle.org/8.8/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+1 actionable task: 1 executed
+Error: Process completed with exit code 1.
