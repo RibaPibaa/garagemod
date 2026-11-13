@@ -1,0 +1,98 @@
+
+name: Build Garage Auction 0.6.0
+
+'on':
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Find and extract source archive
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_ZIP="$(find . -type f \
+            -iname 'GarageAuction-v0.6.0-source*.zip' \
+            -not -path './.git/*' \
+            -print -quit)"
+
+          if [ -z "$SOURCE_ZIP" ]; then
+            echo "::error::Garage Auction 0.6.0 source ZIP was not found."
+            find . -maxdepth 5 -type f \
+              -not -path './.git/*' | sort
+            exit 1
+          fi
+
+          echo "Found archive: $SOURCE_ZIP"
+
+          mkdir -p extracted
+          unzip -o "$SOURCE_ZIP" -d extracted
+
+          PROJECT_FILE="$(find extracted -type f \
+            -name build.gradle -print -quit)"
+
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "::error::build.gradle was not found inside the archive."
+            exit 1
+          fi
+
+          PROJECT_DIR="$(dirname "$PROJECT_FILE")"
+
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "Project directory: $PROJECT_DIR"
+
+      - name: Compile mod
+        id: compile
+        shell: bash
+        env:
+          PROJECT_DIR: ${{ steps.extract.outputs.project_dir }}
+        run: |
+          set -euo pipefail
+
+          gradle -p "$PROJECT_DIR" build \
+            --no-daemon \
+            --stacktrace
+
+          JAR_FILE="$(find "$PROJECT_DIR/build/libs" \
+            -maxdepth 1 \
+            -type f \
+            -name '*.jar' \
+            ! -name '*-sources.jar' \
+            ! -name '*-javadoc.jar' \
+            -print -quit)"
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "::error::Compiled JAR was not found."
+            exit 1
+          fi
+
+          echo "jar_path=$JAR_FILE" >> "$GITHUB_OUTPUT"
+          echo "Built JAR: $JAR_FILE"
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: GarageAuction-0.6.0-Forge-1.20.1
+          path: ${{ steps.compile.outputs.jar_path }}
+          if-no-files-found: error
